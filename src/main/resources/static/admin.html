@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <!-- Place the first <script> tag in your HTML's <head> -->
+    <script src="https://cdn.tiny.cloud/1/yghbf6baqtbxwv2sklfhptk59mr1x5hkvc8v1b4108pfj4bg/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <style>
+        /* Make the admin page layout simple */
+        body { display: block; } /* Override the 'flex' from style.css */
+        
+        /* Style for our forms */
+        .admin-section {
+            background-color: #fff;
+            margin: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .admin-section h2 {
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        /* Style for text boxes and buttons */
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        textarea {
+            height: 200px;
+            font-family: monospace;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <main id="content">
+
+        <section class="admin-section">
+            <h2>Create New Note</h2>
+            <form id="create-form">
+                <input type="text" id="create-title" placeholder="Note Title" required>
+                <textarea id="create-content" placeholder="Note Content (You can use HTML tags like <h1> and <code>)"></textarea>
+                <button type="submit">Save New Note</button>
+            </form>
+        </section>
+
+        <section class="admin-section">
+            <h2>Existing Notes</h2>
+            <div id="existing-notes-list">
+                </div>
+        </section>
+
+    </main>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            
+            let currentEditingTitle = null; // Our "hidden sticky note"
+
+            tinymce.init({
+                selector: 'textarea#create-content',
+                plugins: 'lists link image code table help wordcount',
+                toolbar: 'undo redo | blocks | ' +
+                         'bold italic backcolor | alignleft aligncenter ' +
+                         'alignright alignjustify | bullist numlist outdent indent | ' +
+                         'removeformat | code | help',
+                height: 300,
+                
+                init_instance_callback: function(editor) {
+                    // Activate code *after* editor is ready
+                    const createForm = document.getElementById('create-form');
+                    loadNotes(); // Load the list
+                    createForm.addEventListener('submit', handleFormSubmit);
+                }
+            });
+
+            // --- Recipe 1: Load all notes ---
+            function loadNotes() {
+                const notesListDiv = document.getElementById('existing-notes-list');
+                notesListDiv.innerHTML = '';
+                
+                fetch('/notes')
+                    .then(response => response.json())
+                    .then(notes => {
+                        notes.forEach(note => {
+                            const noteElement = document.createElement('div');
+                            // Use flexbox to put title and button side-by-side
+                            noteElement.style.display = 'flex';
+                            noteElement.style.justifyContent = 'space-between';
+                            noteElement.style.alignItems = 'center';
+                            noteElement.style.borderBottom = '1px solid #eee';
+                            noteElement.style.padding = '10px 0';
+
+                            // --- Clickable Title (for editing) ---
+                            const titleSpan = document.createElement('span');
+                            titleSpan.innerHTML = `<strong>${note.title}</strong>`;
+                            titleSpan.style.cursor = 'pointer';
+                            titleSpan.addEventListener('click', () => {
+                                handleNoteClick(note);
+                            });
+                            
+                            // --- NEW "Delete" Button ---
+                            const deleteButton = document.createElement('button');
+                            deleteButton.textContent = 'Delete';
+                            deleteButton.style.backgroundColor = '#dc3545'; // Red color
+                            deleteButton.addEventListener('click', () => {
+                                handleDeleteNote(note);
+                            });
+                            
+                            noteElement.appendChild(titleSpan);
+                            noteElement.appendChild(deleteButton);
+                            notesListDiv.appendChild(noteElement);
+                        });
+                    });
+            }
+
+            // --- Recipe 2: The "Smart" Save Recipe (No Change) ---
+            function handleFormSubmit(event) {
+                event.preventDefault(); 
+                const createTitleInput = document.getElementById('create-title');
+                const noteDetails = {
+                    title: createTitleInput.value,
+                    content: tinymce.get('create-content').getContent()
+                };
+
+                if (currentEditingTitle === null) {
+                    createNote(noteDetails);
+                } else {
+                    updateNote(currentEditingTitle, noteDetails);
+                }
+            }
+            
+            // --- Recipe 3: Load note into form (No Change) ---
+            function handleNoteClick(note) {
+                const createTitleInput = document.getElementById('create-title');
+                createTitleInput.value = note.title;
+                tinymce.get('create-content').setContent(note.content);
+                currentEditingTitle = note.title;
+                window.scrollTo(0, 0);
+            }
+            
+            // --- Recipe 4: The "Create" (POST) Logic (No Change) ---
+            function createNote(note) {
+                fetch('/notes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(note)
+                })
+                .then(response => response.json())
+                .then(() => {
+                    alert('Note created successfully!');
+                    resetForm();
+                    loadNotes();
+                });
+            }
+            
+            // --- Recipe 5: The "Update" (PUT) Logic (with URL fix) ---
+function updateNote(oldTitle, noteDetails) {
+    // Build the new "smart" URL
+    const safeTitle = encodeURIComponent(oldTitle);
+    const url = '/note?title=' + safeTitle;
+
+    fetch(url, { // Use the new URL
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(noteDetails)
+    })
+    .then(response => response.json())
+    .then(() => {
+        alert('Note updated successfully!');
+        resetForm();
+        loadNotes();
+    });
+}
+
+            // --- NEW Recipe 6: The "Delete" Logic (with URL fix) ---
+function handleDeleteNote(note) {
+    if (confirm(`Are you sure you want to delete the note: "${note.title}"?`)) {
+
+        // Build the new "smart" URL
+        const safeTitle = encodeURIComponent(note.title);
+        const url = '/note?title=' + safeTitle;
+
+        fetch(url, { // Use the new URL
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to delete note.');
+            }
+            return response.text(); 
+        })
+        .then(message => {
+            alert(message);
+            resetForm();
+            loadNotes();
+        })
+        .catch(error => {
+            console.error('Error deleting note:', error);
+            alert('Error deleting note.');
+        });
+    }
+}
+            
+            // --- Recipe 7: A helper to reset everything (No Change) ---
+            function resetForm() {
+                document.getElementById('create-form').reset();
+                tinymce.get('create-content').setContent('');
+                currentEditingTitle = null; 
+            }
+        });
+    </script>
+
+</body>
+</html>

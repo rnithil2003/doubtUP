@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DoubtUP</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <nav id="menu">
+        <h2>Topics</h2>
+        <ul id="topic-list">
+            </ul>
+    </nav>
+
+    <main id="content">
+        <div id="note-content-area">
+            <h1>Welcome!</h1>
+            <p>Please select a topic from the menu to read it.</p>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            
+            const topicListContainer = document.getElementById('topic-list');
+            const contentArea = document.getElementById('note-content-area');
+
+            // --- Recipe 1: Fetch and Build the Tree ---
+            fetch('/notes')
+                .then(response => response.json())
+                .then(notes => {
+                    const topicTree = {}; // Our "root"
+                    notes.forEach(note => {
+                        const parts = note.title.split('/');
+                        let currentLevel = topicTree;
+                        for (let i = 0; i < parts.length; i++) {
+                            const part = parts[i];
+                            if (!currentLevel[part]) {
+                                currentLevel[part] = {};
+                            }
+                            if (i === parts.length - 1) {
+                                currentLevel[part].note = note; 
+                            } else {
+                                currentLevel = currentLevel[part];
+                            }
+                        }
+                    });
+
+                    // --- Recipe 2: Build the HTML from the Tree (THE FIX) ---
+                    function createHtmlMenu(level, ulElement) {
+                        const keys = Object.keys(level).sort(); 
+                        
+                        keys.forEach(key => {
+                            if (key === 'note') return; 
+
+                            const li = document.createElement('li'); // The "box"
+                            const span = document.createElement('span'); // The "label"
+                            span.textContent = key;
+                            li.appendChild(span); // Put the label in the box
+
+                            let subUl = null; // We'll need this later
+
+                            // Check for sub-branches (recursion part)
+                            const subKeys = Object.keys(level[key]).filter(k => k !== 'note');
+                            if (subKeys.length > 0) { 
+                                subUl = document.createElement('ul');
+                                subUl.style.paddingLeft = '15px';
+                                
+                                // --- THIS IS THE FIX ---
+                                // Hide all sub-menus by default
+                                subUl.style.display = 'none'; 
+                                // --- END OF FIX ---
+                                
+                                createHtmlMenu(level[key], subUl); // RECURSION
+                                li.appendChild(subUl); // Add sub-list to the "box"
+                            }
+                            
+                            // Check if this is a "leaf" (a clickable note)
+                            if (level[key].note) {
+                                span.style.cursor = 'pointer';
+                                span.style.color = '#005a9c';
+                                
+                                // Add hover effects *to the label*
+                                span.addEventListener('mouseover', () => { span.style.textDecoration = 'underline'; });
+                                span.addEventListener('mouseout', () => { span.style.textDecoration = 'none'; });
+
+                                // Add the click listener *to the label*
+                                span.addEventListener('click', (event) => {
+                                    event.stopPropagation(); // Stop click from bubbling
+                                    loadNoteContent(level[key].note);
+                                });
+
+                            } else {
+                                // This is a "branch" (folder) - make IT clickable
+                                span.style.fontWeight = 'bold';
+                                span.style.cursor = 'pointer';
+                                
+                                // --- THIS IS THE "TOGGLE" LOGIC ---
+                                span.addEventListener('click', (event) => {
+                                    event.stopPropagation(); // Stop bubbling
+                                    // Find the sub-menu (if it exists)
+                                    if (subUl) {
+                                        // Toggle its visibility
+                                        if (subUl.style.display === 'none') {
+                                            subUl.style.display = 'block'; // Open it
+                                        } else {
+                                            subUl.style.display = 'none'; // Close it
+                                        }
+                                    }
+                                });
+                                // --- END OF "TOGGLE" LOGIC ---
+                            }
+                            
+                            ulElement.appendChild(li); // Add the "box" to the menu
+                        });
+                    }
+                    
+                    createHtmlMenu(topicTree, topicListContainer);
+                });
+
+            // --- Recipe 3: Load content (no change) ---
+            function loadNoteContent(note) {
+                const safeTitle = encodeURIComponent(note.title);
+                const url = '/note?title=' + safeTitle;
+
+                fetch(url)
+                    .then(res => {
+                        if (!res.ok) {
+                            throw new Error('Server error: ' +g + res.status);
+                        }
+                        return res.json();
+                    })
+                    .then(noteContent => {
+                        const titleParts = noteContent.title.split('/');
+                        const shortTitle = titleParts[titleParts.length - 1];
+                        contentArea.innerHTML = `<h1>${shortTitle}</h1>` + noteContent.content;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching note:', error);
+                        contentArea.innerHTML = `<p style="color: red;">Sorry, could not load note: ${error.message}</p>`;
+                    });
+            }
+
+            // Set the initial welcome message
+            contentArea.innerHTML = '<h1>Welcome!</h1><p>Please select a topic.</p>';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+/* --- Global "Pro" Reset --- */
+* {
+    /* This is a "pro" tip: It makes all boxes 
+       include padding in their width, so a 
+       200px wide box with 10px padding is 
+       still 200px wide, not 220px. */
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* --- Main Page Layout --- */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #ffffff; /* Clean white background */
+    
+    /* This is the "magic" layout rule! */
+    display: flex; 
+}
+
+/* --- Sidebar Menu (#menu) --- */
+#menu {
+    width: 15px; /* Collapse it to a tiny 15px "tab" */
+    height: 100vh;
+    background-color: #f7f7f7;
+    border-right: 1px solid #e0e0e0;
+    overflow-y: auto;
+
+    /* This is the "magic" for the animation */
+    transition: width 0.3s ease-in-out;
+
+    /* Hide the text when collapsed */
+    overflow-x: hidden;
+}
+
+/* This is the "hover" rule that makes it fly out */
+#menu:hover {
+    width: 250px; /* Expand back to full width */
+}
+#menu h2, #menu ul {
+    /* This hides the text when collapsed */
+    opacity: 0;
+    transition: opacity 0.2s linear;
+
+    /* This makes sure the text doesn't wrap */
+    white-space: nowrap; 
+}
+
+#menu:hover h2, #menu:hover ul {
+    /* This fades the text in when the menu is open */
+    opacity: 1;
+    transition-delay: 0.1s; /* Wait for menu to open a bit */
+}
+
+#menu h2 {
+    font-size: 1.2rem;
+    color: #333;
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+#menu ul {
+    list-style-type: none; /* Removes the bullet points */
+}
+
+#menu li {
+    padding: 12px 20px;
+    color: #005a9c; /* A nice blue for the links */
+    cursor: pointer;
+    
+    /* This makes the hover effect smooth */
+    transition: background-color 0.2s ease-in-out;
+}
+
+/* This is a "pseudo-class": It changes the style
+   when you "hover" your mouse over the item. */
+#menu li:hover {
+    background-color: #e0e0e0;
+}
+
+/* --- Main Content Area (#content) --- */
+#content {
+    /* This is the other "magic" flexbox rule.
+       It means "take up all the rest of the
+       available space." */
+    flex-grow: 1;
+    
+    height: 100vh;
+    overflow-y: auto; /* Make content area scrollable */
+    padding: 40px;
+}
+
+/* --- Styling for the Notes Themselves --- */
+/* This styles the content your JavaScript adds */
+#note-content-area h1 {
+    font-size: 2.5rem;
+    color: #222;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+#note-content-area p {
+    font-size: 1.1rem;
+    color: #444;
+    margin-bottom: 20px;
+}
+
+/* This is the "pro" styling for your code snippets! */
+#note-content-area code {
+    background-color: #2d2d2d; /* Dark background */
+    color: #f1f1f1; /* Light text */
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 1rem;
+}
