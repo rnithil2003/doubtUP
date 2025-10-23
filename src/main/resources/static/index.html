@@ -5,146 +5,224 @@
     <title>DoubtUP</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
-
-    <nav id="menu">
-        <h2>Topics</h2>
-        <ul id="topic-list">
-            </ul>
+<body class="has-header"> <header id="main-header">
+    <a href="/" class="logo-link"><div class="logo">DoubtUP</div></a>
+    <nav class="user-nav">
+        <span>Login</span>
+        <span>Account</span>
     </nav>
+ </header>
 
-    <main id="content">
-        <div id="note-content-area">
-            <h1>Welcome!</h1>
-            <p>Please select a topic from the menu to read it.</p>
-        </div>
-    </main>
+ <nav id="top-nav">
+     </nav>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            
-            const topicListContainer = document.getElementById('topic-list');
-            const contentArea = document.getElementById('note-content-area');
+ <div class="main-wrapper">
 
-            // --- Recipe 1: Fetch and Build the Tree ---
-            fetch('/notes')
-                .then(response => response.json())
-                .then(notes => {
-                    const topicTree = {}; // Our "root"
-                    notes.forEach(note => {
-                        const parts = note.title.split('/');
-                        let currentLevel = topicTree;
-                        for (let i = 0; i < parts.length; i++) {
-                            const part = parts[i];
-                            if (!currentLevel[part]) {
-                                currentLevel[part] = {};
-                            }
-                            if (i === parts.length - 1) {
-                                currentLevel[part].note = note; 
-                            } else {
-                                currentLevel = currentLevel[part];
-                            }
-                        }
+     <nav id="menu" class="content-area sidebar">
+          <h2 id="sidebar-title"></h2>
+         <ul id="topic-list">
+             </ul>
+     </nav>
+
+     <main id="content" class="content-area main-content">
+         <div id="note-content-area">
+             <h1>Ready to ACE</h1>
+             <p>I Know YOU 😔 didn't get clarity on particular topic, don't worry at all!!! chill 😎</p>
+         </div>
+     </main>
+
+ </div> 
+ <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        console.log("Script loaded. DOM ready."); // DEBUG
+
+        // Get references to HTML elements
+        const topNavContainer = document.getElementById('top-nav');
+        const sidebarNav = document.getElementById('menu'); // The <nav> sidebar element
+        const sidebarTitle = document.getElementById('sidebar-title'); // The H2 in the sidebar
+        const topicListContainer = document.getElementById('topic-list'); // The <ul> inside the sidebar
+        const contentArea = document.getElementById('note-content-area'); // The div for content
+
+        let allNotes = []; // Master list
+        let topicTree = {}; // Full topic tree structure
+
+        // --- Recipe 1: Build Tree (No Change) ---
+        function buildTree(notes) {
+            const tree = {};
+            notes.forEach(note => {
+                const parts = note.title.split('/');
+                let currentLevel = tree;
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i];
+                    if (!currentLevel[part]) { currentLevel[part] = {}; }
+                    if (i === parts.length - 1) { currentLevel[part].note = note; }
+                    else { currentLevel = currentLevel[part]; }
+                }
+            });
+            return tree;
+        }
+
+        // --- Recipe 2: Build Sidebar HTML from a Sub-Tree ---
+        function createSidebarMenu(level, ulElement) {
+            console.log("Building sidebar for level:", level); // DEBUG
+            ulElement.innerHTML = ''; // Clear previous sidebar content first
+            const keys = Object.keys(level).sort();
+            keys.forEach(key => {
+                // Skip internal data and overview entries in the sidebar list itself
+                if (key === 'note' || key === '_overview') return;
+
+                const li = document.createElement('li');
+                const span = document.createElement('span');
+                span.textContent = key;
+                // --- NEW: Add tooltip ---
+                span.title = key; // Set the title attribute for hover tooltip
+                // --- END NEW ---
+                li.appendChild(span);
+
+                let subUl = null;
+                // Check for children EXCLUDING _overview
+                const subKeys = Object.keys(level[key]).filter(k => k !== 'note' && k !== '_overview');
+
+                if (subKeys.length > 0) { // If it has children
+                    subUl = document.createElement('ul');
+                    subUl.style.paddingLeft = '15px';
+                    subUl.style.display = 'none'; // Start collapsed
+                    createSidebarMenu(level[key], subUl); // Build sub-menu recursively
+                    li.appendChild(subUl); // Append sub-menu
+                }
+
+                // Add click listeners
+                if (level[key].note) { // Clickable leaf node
+                    span.classList.add('topic-leaf');
+                    span.style.cursor = 'pointer';
+                    span.style.color = '#005a9c';
+                    span.addEventListener('mouseover', () => { span.style.textDecoration = 'underline'; });
+                    span.addEventListener('mouseout', () => { span.style.textDecoration = 'none'; });
+                    span.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        console.log(">>> Leaf clicked:", level[key].note.title); // DEBUG
+                        loadNoteContent(level[key].note);
                     });
+                } else if (subUl) { // Clickable folder node (only if it HAS a sub-menu)
+                    span.style.fontWeight = 'bold';
+                    span.style.cursor = 'pointer';
+                    span.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        console.log(">>> Folder clicked:", key); // DEBUG
+                        subUl.style.display = (subUl.style.display === 'none' ? 'block' : 'none'); // Toggle
+                    });
+                } else { // Folder without children (or only _overview)
+                     span.style.color = '#777';
+                     span.style.cursor = 'default';
+                }
 
-                    // --- Recipe 2: Build the HTML from the Tree (THE FIX) ---
-                    function createHtmlMenu(level, ulElement) {
-                        const keys = Object.keys(level).sort(); 
-                        
-                        keys.forEach(key => {
-                            if (key === 'note') return; 
+                ulElement.appendChild(li); // Add the list item
+            });
+        }
 
-                            const li = document.createElement('li'); // The "box"
-                            const span = document.createElement('span'); // The "label"
-                            span.textContent = key;
-                            li.appendChild(span); // Put the label in the box
 
-                            let subUl = null; // We'll need this later
-
-                            // Check for sub-branches (recursion part)
-                            const subKeys = Object.keys(level[key]).filter(k => k !== 'note');
-                            if (subKeys.length > 0) { 
-                                subUl = document.createElement('ul');
-                                subUl.style.paddingLeft = '15px';
-                                
-                                // --- THIS IS THE FIX ---
-                                // Hide all sub-menus by default
-                                subUl.style.display = 'none'; 
-                                // --- END OF FIX ---
-                                
-                                createHtmlMenu(level[key], subUl); // RECURSION
-                                li.appendChild(subUl); // Add sub-list to the "box"
-                            }
-                            
-                            // Check if this is a "leaf" (a clickable note)
-                            if (level[key].note) {
-                                span.style.cursor = 'pointer';
-                                span.style.color = '#005a9c';
-                                
-                                // Add hover effects *to the label*
-                                span.addEventListener('mouseover', () => { span.style.textDecoration = 'underline'; });
-                                span.addEventListener('mouseout', () => { span.style.textDecoration = 'none'; });
-
-                                // Add the click listener *to the label*
-                                span.addEventListener('click', (event) => {
-                                    event.stopPropagation(); // Stop click from bubbling
-                                    loadNoteContent(level[key].note);
-                                });
-
-                            } else {
-                                // This is a "branch" (folder) - make IT clickable
-                                span.style.fontWeight = 'bold';
-                                span.style.cursor = 'pointer';
-                                
-                                // --- THIS IS THE "TOGGLE" LOGIC ---
-                                span.addEventListener('click', (event) => {
-                                    event.stopPropagation(); // Stop bubbling
-                                    // Find the sub-menu (if it exists)
-                                    if (subUl) {
-                                        // Toggle its visibility
-                                        if (subUl.style.display === 'none') {
-                                            subUl.style.display = 'block'; // Open it
-                                        } else {
-                                            subUl.style.display = 'none'; // Close it
-                                        }
-                                    }
-                                });
-                                // --- END OF "TOGGLE" LOGIC ---
-                            }
-                            
-                            ulElement.appendChild(li); // Add the "box" to the menu
-                        });
-                    }
-                    
-                    createHtmlMenu(topicTree, topicListContainer);
+        // --- Recipe 3: Load Content ---
+        function loadNoteContent(note) {
+             console.log("Loading content for:", note.title); // DEBUG
+             const safeTitle = encodeURIComponent(note.title);
+             const url = '/note?title=' + safeTitle;
+             fetch(url)
+                .then(res => {
+                    if (!res.ok) { throw new Error('Server error: ' + res.status); }
+                    return res.json();
+                })
+                .then(noteContent => {
+                    const titleParts = noteContent.title.split('/');
+                    const isOverview = titleParts[titleParts.length - 1] === '_overview';
+                    const displayTitle = isOverview ? titleParts[titleParts.length - 2] : titleParts[titleParts.length - 1];
+                    contentArea.innerHTML = `<h1>${displayTitle}</h1>` + noteContent.content;
+                })
+                .catch(error => {
+                    console.error('Error fetching note:', error);
+                    contentArea.innerHTML = `<p style="color: red;">Sorry, could not load note.</p>`;
                 });
+        }
 
-            // --- Recipe 3: Load content (no change) ---
-            function loadNoteContent(note) {
-                const safeTitle = encodeURIComponent(note.title);
-                const url = '/note?title=' + safeTitle;
+        // --- Recipe 4: Build Top Navigation ---
+        function buildTopNav() {
+            console.log("Building top nav..."); // DEBUG
+            topNavContainer.innerHTML = ''; // Clear previous
+            const mainTopics = Object.keys(topicTree).sort();
+            console.log("Main topics found:", mainTopics); // DEBUG
 
-                fetch(url)
-                    .then(res => {
-                        if (!res.ok) {
-                            throw new Error('Server error: ' +g + res.status);
-                        }
-                        return res.json();
-                    })
-                    .then(noteContent => {
-                        const titleParts = noteContent.title.split('/');
-                        const shortTitle = titleParts[titleParts.length - 1];
-                        contentArea.innerHTML = `<h1>${shortTitle}</h1>` + noteContent.content;
-                    })
-                    .catch(error => {
-                        console.error('Error fetching note:', error);
-                        contentArea.innerHTML = `<p style="color: red;">Sorry, could not load note: ${error.message}</p>`;
-                    });
-            }
+            mainTopics.forEach(topic => {
+                const span = document.createElement('span');
+                span.textContent = topic;
+                span.dataset.topic = topic; // Store topic name for easy access
 
-            // Set the initial welcome message
-            contentArea.innerHTML = '<h1>Welcome!</h1><p>Please select a topic.</p>';
-        });
-    </script>
+                span.addEventListener('click', (event) => {
+                    const selectedTopic = event.target.dataset.topic;
+                    console.log("Top nav clicked:", selectedTopic); // DEBUG
+
+                    // --- UI Updates ---
+                    // 1. Highlight active top nav item
+                    document.querySelectorAll('#top-nav span').forEach(s => s.classList.remove('active'));
+                    event.target.classList.add('active');
+
+                    // 2. Update sidebar title
+                    sidebarTitle.textContent = selectedTopic.charAt(0).toUpperCase() + selectedTopic.slice(1); // Capitalize
+
+                    // 3. Clear and build the sidebar for THIS topic's sub-tree
+                    topicListContainer.innerHTML = ''; // Ensure sidebar UL is cleared
+                    if (topicTree[selectedTopic]) {
+                        createSidebarMenu(topicTree[selectedTopic], topicListContainer); // Build sidebar
+                        sidebarNav.classList.add('visible'); // Show sidebar NAV element
+                    } else {
+                        sidebarNav.classList.remove('visible'); // Hide sidebar NAV if no subtree
+                        console.error("Could not find subtree for:", selectedTopic); // DEBUG
+                    }
+
+                    // --- Load Content ---
+                    // Try to load the overview content for this topic
+                    const overviewNoteTitle = selectedTopic + '/_overview';
+                    const overviewNote = allNotes.find(note => note.title === overviewNoteTitle);
+
+                    if (overviewNote) {
+                        loadNoteContent(overviewNote); // Load overview
+                    } else {
+                        // Show default message if no overview
+                        contentArea.innerHTML = `<h1>${selectedTopic}</h1><p>Select a chapter or topic from the sidebar.</p>`;
+                    }
+                });
+                topNavContainer.appendChild(span);
+            });
+        }
+
+        // --- Initial Page Load ---
+        console.log("Fetching notes..."); // DEBUG
+        fetch('/notes')
+            .then(response => {
+                if (!response.ok) { throw new Error('Failed to fetch notes: ' + response.status); }
+                return response.json();
+            })
+            .then(notes => {
+                console.log("Fetched notes:", notes.length); // DEBUG
+                if (notes.length === 0) {
+                     console.warn("WARNING: No notes found!"); // DEBUG
+                     contentArea.innerHTML = '<h1>Welcome!</h1><p>No topics available yet.</p>';
+                     return; // Stop if no notes
+                }
+                allNotes = notes;
+                topicTree = buildTree(allNotes);
+                console.log("Built topic tree."); // DEBUG
+                buildTopNav(); // Build top nav
+                // Sidebar starts hidden and is built on top nav click
+            })
+            .catch(error => {
+                console.error("Error during initial load:", error); // DEBUG
+                contentArea.innerHTML = `<p style="color: red;">Error loading initial data. Please check console.</p>`;
+            });
+
+        // Initial welcome message
+        contentArea.innerHTML = '<h1>Welcome!</h1><p>Please select a main topic from the top navigation.</p>';
+
+    }); // End DOMContentLoaded
+</script>
+
 </body>
 </html>

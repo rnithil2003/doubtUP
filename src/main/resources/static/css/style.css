@@ -11,12 +11,12 @@
 
 /* --- Main Page Layout --- */
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    line-height: 1.6;
-    background-color: #ffffff; /* Clean white background */
-    
-    /* This is the "magic" layout rule! */
-    display: flex; 
+    /* Use system fonts for better performance and native feel */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    line-height: 1.6; /* Improve readability */
+    color: #333; /* Set a default dark gray text color */
+    background-color: #ffffff;
+    margin: 0; /* Ensure no default body margin */
 }
 
 /* --- Sidebar Menu (#menu) --- */
@@ -115,4 +115,213 @@ body {
     border-radius: 4px;
     font-family: "Courier New", Courier, monospace;
     font-size: 1rem;
+}
+
+/* --- Header Styles (Ensure these are present) --- */
+#main-header {
+    width: 100%;
+    height: 60px;
+    background-color: #333;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Space out logo and nav */
+    padding: 0 30px;
+    position: fixed; /* Stick to top */
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+.logo-link { text-decoration: none; color: inherit; }
+.logo { font-size: 1.5rem; font-weight: bold; }
+.user-nav span { margin-left: 15px; cursor: pointer; }
+.user-nav span:hover { text-decoration: underline; }
+
+
+/* --- New Top Navigation Styles --- */
+#top-nav {
+    width: 100%;
+    background-color: #eee;
+    padding: 12px 30px; /* Match header padding */
+    border-bottom: 1px solid #ccc;
+    position: fixed; /* Stick below header */
+    top: 60px; /* Below the 60px header */
+    left: 0;
+    z-index: 999;
+    display: flex;
+    gap: 25px; /* More space between topic links */
+    box-sizing: border-box; /* Include padding in width */
+}
+
+#top-nav span {
+    font-weight: bold;
+    cursor: pointer;
+    color: #333;
+    padding-bottom: 5px; /* Space for border */
+    border-bottom: 3px solid transparent; /* Placeholder for active border */
+    transition: color 0.2s, border-bottom-color 0.2s;
+}
+
+#top-nav span:hover {
+    color: #0056b3; /* Darker blue on hover */
+}
+#top-nav span.active { /* Style for the selected topic */
+    color: #007bff; /* Blue */
+    border-bottom-color: #007bff; /* Blue underline */
+}
+
+/* --- New Main Layout Styles --- */
+.main-wrapper {
+    display: flex;
+    /* Increased padding-top for a gap */
+    padding-top: 120px;
+    /* Adjust height calculation accordingly */
+    height: calc(100vh - 120px);
+}
+
+/* --- Updated Sidebar Styles --- */
+.sidebar {
+    width: 250px; /* Fixed width when shown */
+    flex-shrink: 0; /* Prevent sidebar from shrinking */
+    height: 100%; /* Fill parent (.main-wrapper) height */
+    background-color: #f7f7f7;
+    border-right: 1px solid #e0e0e0;
+    overflow-y: auto;
+    display: none; /* Start hidden */
+    padding-top: 15px; /* Space at the top */
+    box-sizing: border-box;
+}
+
+.sidebar.visible {
+    display: block; /* Show the sidebar */
+}
+.sidebar-simple { /* Replaces #menu layout rules */
+    /* ... (existing width, height, etc.) ... */
+    width: 250px; /* Fixed width when shown */
+    flex-shrink: 0; /* Prevent sidebar from shrinking */
+    height: 100%; /* Fill parent (.main-wrapper) height */
+    background-color: #f7f7f7;
+    border-right: 1px solid #e0e0e0;
+    overflow-y: auto;
+    display: none; /* Start hidden */
+    padding-top: 15px; /* Space at the top */
+    box-sizing: border-box;
+    padding-top: 0; /* Remove top padding, rely on h2 padding */
+    box-sizing: border-box;
+}
+
+#sidebar-title { /* Style for the topic title in sidebar */
+    font-size: 1.0rem;
+    color: #555;
+    padding: 15px 15px 10px 15px; /* Consistent padding */
+    margin: 0;
+    border-bottom: 1px solid #ddd;
+    background-color: #eee; /* Slightly darker background for title */
+}
+
+#menu ul { /* Styling for the list inside sidebar */
+    list-style-type: none;
+    padding: 10px 0 0 0; /* Adjust padding */
+    margin: 0;
+}
+#menu li {
+    margin: 0;
+    width: 100%;
+    /* Add a subtle bottom border between items */
+    border-bottom: 1px solid #eee;
+}
+#menu li span {
+    display: block; /* Keep this */
+    padding: 2px 15px; /* Keep this */
+    width: 100%; /* Keep this */
+    box-sizing: border-box; /* Keep this */
+    font-size: 0.9rem; /* Keep this */
+    line-height: 1.2; /* Keep this */
+
+    /* --- NEW: Add these for ellipsis --- */
+    white-space: nowrap; /* Prevent wrapping */
+    overflow: hidden; /* Hide the overflowing text */
+    text-overflow: ellipsis; /* Show "..." */
+}
+/* Add a hover effect to all sidebar spans */
+#menu li span:hover {
+    background-color: #e9e9e9; /* Light gray background on hover */
+}
+/* Ensure nested lists don't have extra top margin */
+#menu li ul {
+    padding-left: 15px;
+    margin-top: 0; /* Remove top margin */
+    margin-bottom: 0; /* Remove bottom margin */
+    /* Add a left border for visual structure */
+    border-left: 2px solid #ddd;
+    margin-left: 15px; /* Align border nicely */
+}
+
+/* --- Updated Main Content Styles --- */
+.main-content {
+    flex-grow: 1; /* Take remaining width */
+    height: 100%; /* Fill parent height */
+    overflow-y: auto;
+    padding: 40px;
+    box-sizing: border-box;
+}
+.main-content-simple {
+    flex-grow: 1; /* Take remaining width */
+    height: 100%; /* Fill parent height */
+    overflow-y: auto;
+    padding: 40px;
+    box-sizing: border-box;
+    /* ... (existing styles) ... */
+    padding: 30px 40px; /* Adjust padding */
+}
+#content { /* Keep basic padding */
+    padding: 0; /* Padding is now on .main-content */
+}
+#note-content-area h1 {
+    font-size: 2.2rem; /* Slightly smaller H1 */
+    color: #222;
+    border-bottom: 1px solid #ddd; /* Lighter border */
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+}
+#note-content-area p {
+    font-size: 1rem; /* Standard paragraph size */
+    color: #444;
+    margin-bottom: 1.5em; /* Space between paragraphs */
+    max-width: 800px; /* Limit line length for readability */
+}
+/* Better Code Block Styling */
+#note-content-area pre code { /* Target code inside <pre> tags specifically */
+    display: block; /* Make it a block element */
+    background-color: #2d2d2d;
+    color: #f1f1f1;
+    padding: 15px; /* More padding */
+    border-radius: 5px;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace; /* Better monospace fonts */
+    font-size: 0.9rem;
+    line-height: 1.5;
+    overflow-x: auto; /* Allow horizontal scrolling for long lines */
+    white-space: pre; /* Preserve whitespace and line breaks */
+}
+/* Inline code styling (if not inside <pre>) */
+#note-content-area code {
+    background-color: #f0f0f0; /* Lighter background for inline code */
+    color: #c7254e; /* A common color for inline code */
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+/* Avoid double-styling code inside pre blocks */
+#note-content-area pre code {
+    background-color: #2d2d2d; /* Override inline style */
+    color: #f1f1f1; /* Override inline style */
+    padding: 15px; /* Override inline style */
+    border-radius: 5px; /* Override inline style */
+    font-size: 0.9rem; /* Override inline style */
+}
+
+/* Remove border from the last item in any list */
+#menu li:last-child {
+    border-bottom: none;
 }
